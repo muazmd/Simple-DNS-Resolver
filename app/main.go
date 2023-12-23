@@ -10,8 +10,9 @@ import (
 )
 
 type Message struct {
-	DnsHeader Header
-	Question  DNSQuestion
+	DnsHeader      Header
+	Question       DNSQuestion
+	ResourceRecord ResourceRecord
 }
 
 type Header struct {
@@ -39,25 +40,42 @@ type DNSQuestion struct {
 	Class int
 }
 
-func (question DNSQuestion) serialize() []byte {
-	result := LabelSequence(string(question.Name))
+type ResourceRecord struct {
+	Name   string
+	Type   uint16 //2 bytes
+	Class  uint16 //2 bytes
+	TTL    uint32 // 4 bytes
+	Length uint16 // 2 bytes
+	Data   uint32
+}
+
+func (Answer ResourceRecord) serialize() []byte {
 	questionAdd := make([]byte, 4)
-	fmt.Println("result", question.Name)
+	binary.BigEndian.PutUint16(questionAdd[:2], uint16(Answer.Type))
+	binary.BigEndian.PutUint16(questionAdd[2:4], uint16(Answer.Class))
+	result := append(LabelSequence(Answer.Name), questionAdd...)
+	var answerData = make([]byte, 10)
+
+	binary.BigEndian.PutUint32(answerData[:4], Answer.TTL)
+	binary.BigEndian.PutUint16(answerData[4:6], Answer.Length)
+	binary.BigEndian.PutUint32(answerData[6:10], Answer.Data)
+	return append(result, answerData...)
+
+}
+func (question DNSQuestion) serialize() []byte {
+	questionAdd := make([]byte, 4)
 	binary.BigEndian.PutUint16(questionAdd[:2], uint16(question.Type))
 	binary.BigEndian.PutUint16(questionAdd[2:4], uint16(question.Class))
-	result = append(result, questionAdd...)
+	result := append(LabelSequence(question.Name), questionAdd...)
 	return result
 
 }
 
 func LabelSequence(q string) []byte {
 	labels := strings.Split(q, ".") //lable : google.com
-
-		fmt.Println("here form muaaz Labels", labels)
 	var sequence []byte
 	for _, lable := range labels {
 		sequence = append(sequence, byte(len(lable))) // len(google) /x06
-		fmt.Println("here form muaaz ", lable)
 		sequence = append(sequence, lable...)         // google
 	}
 	sequence = append(sequence, '\x00') // terminate the lable with \x00
@@ -88,6 +106,14 @@ func CreateResponse() Message {
 			Type:  1,
 			Class: 1,
 		},
+		ResourceRecord: ResourceRecord{
+			Name: "codecrafers.io",
+			Type: 1,
+			Class: 1,
+			TTL: 60,
+			Length: 4,
+			Data: 0,
+		},
 	}
 }
 
@@ -96,7 +122,9 @@ func CreateResponse() Message {
 func (header Message) serialize() []byte {
 	headerBytes := header.DnsHeader.serialize()
 	QuestionBytes := header.Question.serialize()
-	return append(headerBytes, QuestionBytes...)
+	AnswerBytes := header.ResourceRecord.serialize()
+	result := append(headerBytes, QuestionBytes...)
+	return append(result, AnswerBytes...)
 }
 
 func (msg Header) serialize() []byte {
