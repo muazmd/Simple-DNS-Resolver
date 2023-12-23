@@ -107,7 +107,7 @@ func CreateResponse() Message {
 			Class: 1,
 		},
 		ResourceRecord: ResourceRecord{
-			Name: "codecrafers.io",
+			Name: "codecrafters.io",
 			Type: 1,
 			Class: 1,
 			TTL: 60,
