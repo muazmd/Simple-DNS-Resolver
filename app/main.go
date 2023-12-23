@@ -52,6 +52,7 @@ func (question DNSQuestion) serialize() []byte {
 func LabelSequence(label string) []byte {
 	labels := strings.Split(label, ".") //lable : google.com
 
+		fmt.Println("here form muaaz Labels", labels)
 	var sequence []byte
 	for _, lable := range labels {
 		sequence = append(sequence, byte(len(label))) // len(google) /x06
