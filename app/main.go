@@ -50,14 +50,14 @@ func (question DNSQuestion) serialize() []byte {
 
 }
 
-func LabelSequence(label string) []byte {
-	labels := strings.Split(label, ".") //lable : google.com
+func LabelSequence(q string) []byte {
+	labels := strings.Split(q, ".") //lable : google.com
 
 		fmt.Println("here form muaaz Labels", labels)
 	var sequence []byte
 	for _, lable := range labels {
-		sequence = append(sequence, byte(len(label))) // len(google) /x06
-		fmt.Println("here form muaaz ", label)
+		sequence = append(sequence, byte(len(lable))) // len(google) /x06
+		fmt.Println("here form muaaz ", lable)
 		sequence = append(sequence, lable...)         // google
 	}
 	sequence = append(sequence, '\x00') // terminate the lable with \x00
