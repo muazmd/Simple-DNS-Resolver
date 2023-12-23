@@ -97,7 +97,7 @@ func CreateResponse() Message {
 				Rcode:  0x0,
 			},
 			QDCount: 0x1,
-			ANCount: 0x0,
+			ANCount: 0x1,
 			NSCount: 0x0,
 			ARCount: 0x0,
 		},
