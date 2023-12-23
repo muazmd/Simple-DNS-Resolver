@@ -55,6 +55,7 @@ func LabelSequence(label string) []byte {
 	var sequence []byte
 	for _, lable := range labels {
 		sequence = append(sequence, byte(len(label))) // len(google) /x06
+		fmt.Println("here form muaaz ", label)
 		sequence = append(sequence, lable...)         // google
 	}
 	sequence = append(sequence, '\x00') // terminate the lable with \x00
