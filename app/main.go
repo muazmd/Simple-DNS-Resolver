@@ -42,7 +42,7 @@ type DNSQuestion struct {
 func (question DNSQuestion) serialize() []byte {
 	result := LabelSequence(string(question.Name))
 	questionAdd := make([]byte, 4)
-	fmt.Println("result", result)
+	fmt.Println("result", question.Name)
 	binary.BigEndian.PutUint16(questionAdd[:2], uint16(question.Type))
 	binary.BigEndian.PutUint16(questionAdd[2:4], uint16(question.Class))
 	result = append(result, questionAdd...)
