@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 
 	// "io"
 	"strings"
@@ -66,6 +65,37 @@ func (msg Header) serialize() []byte {
 	binary.BigEndian.PutUint16(result[10:12], msg.ARCount)
 	return result
 
+}
+
+func (m Message) DecondMsg(data []byte) (Message, error) {
+	msg := Message{}
+	header, err := m.DnsHeader.DecodeHeader(data[:12])
+	if err != nil {
+		fmt.Println("Error deconing Header ", err)
+		return msg, err
+	}
+	msg.DnsHeader = header
+	return msg, nil
+}
+
+func (m Header) DecodeHeader(data []byte) (Header, error) {
+	h := Header{}
+	h.ID = binary.BigEndian.Uint16(data[:2])
+	flags := binary.BigEndian.Uint16(data[2:4])
+	h.Flags.QR = flags>>15 != 0
+	h.Flags.OPCode = uint8(flags >> 11)
+	h.Flags.AA = flags>>10 != 0
+	h.Flags.TC = flags>>9 != 0
+	h.Flags.RD = flags>>8 != 0
+	h.Flags.RA = flags>>7 != 0
+	h.Flags.Z = uint8(flags >> 4)
+
+	h.QDCount = binary.BigEndian.Uint16(data[4:6])
+	h.ANCount = binary.BigEndian.Uint16(data[6:8])
+	h.NSCount = binary.BigEndian.Uint16(data[8:10])
+	h.ARCount = binary.BigEndian.Uint16(data[10:12])
+
+	return h, nil
 }
 
 type DnsMsgFlags struct {
@@ -132,19 +162,19 @@ func LabelSequence(q string) []byte {
 }
 
 // Create a response
-func CreateResponse() Message {
+func CreateResponse(req Message) Message {
 	return Message{
 		DnsHeader: Header{
-			ID: 1234,
+			ID: req.DnsHeader.ID,
 			Flags: DnsMsgFlags{
 				QR:     true,
-				OPCode: 0x0,
+				OPCode: req.DnsHeader.Flags.OPCode,
 				AA:     false,
 				TC:     false,
-				RD:     false,
+				RD:     req.DnsHeader.Flags.RD,
 				RA:     false,
 				Z:      0x0,
-				Rcode:  0x0,
+				Rcode:  req.DnsHeader.Flags.Rcode,
 			},
 			QDCount: 0x1,
 			ANCount: 0x1,
@@ -196,19 +226,20 @@ func main() {
 			break
 		}
 
-		receivedData := string(buf[:size])
-		fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
+		// receivedData := string(buf[:size])
+		// fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
+		m := Message{}
+		msg, err := m.DecondMsg(buf[:size])
+		if err != nil {
+			fmt.Println("error parsing message", err)
+		}
 
-		response := CreateResponse().serialize()
+		response := CreateResponse(msg).serialize()
 
 		_, err = udpConn.WriteToUDP(response, source)
 		if err != nil {
 			fmt.Println("Failed to send response:", err)
 		}
-		t,err := io.ReadAll(udpConn)
-		if err != nil{
-			fmt.Println(err)
-		}
-		fmt.Println("Hello", string(t) )
+
 	}
 }
