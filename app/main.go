@@ -67,7 +67,7 @@ func (msg Header) serialize() []byte {
 
 }
 
-func (m Message) DecondMsg(data []byte) (Message, error) {
+func (m Message) DecodeMsg(data []byte) (Message, error) {
 	msg := Message{}
 	header, err := m.DnsHeader.DecodeHeader(data[:12])
 	if err != nil {
@@ -89,7 +89,7 @@ func (m Header) DecodeHeader(data []byte) (Header, error) {
 	h.Flags.RD = flags>>8 != 0
 	h.Flags.RA = flags>>7 != 0
 	h.Flags.Z = uint8(flags >> 4)
-	fmt.Println(m.Flags.Rcode)
+	fmt.Println("msh Rcode",flags >> 1)
 	h.QDCount = binary.BigEndian.Uint16(data[4:6])
 	h.ANCount = binary.BigEndian.Uint16(data[6:8])
 	h.NSCount = binary.BigEndian.Uint16(data[8:10])
@@ -237,7 +237,7 @@ func main() {
 		// receivedData := string(buf[:size])
 		// fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 		m := Message{}
-		msg, err := m.DecondMsg(buf[:size])
+		msg, err := m.DecodeMsg(buf[:size])
 		if err != nil {
 			fmt.Println("error parsing message", err)
 		}
