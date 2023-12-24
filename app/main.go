@@ -11,12 +11,12 @@ import (
 )
 
 type Message struct {
-	DnsHeader      Header
-	Question       DNSQuestion
-	ResourceRecord ResourceRecord
+	DnsHeader      *Header
+	Question       *DNSQuestion
+	ResourceRecord *ResourceRecord
 }
 
-func (header Message) serialize() []byte {
+func (header *Message) serialize() []byte {
 	headerBytes := header.DnsHeader.serialize()
 	QuestionBytes := header.Question.serialize()
 	AnswerBytes := header.ResourceRecord.serialize()
@@ -33,7 +33,7 @@ type Header struct {
 	ARCount uint16
 }
 
-func (msg Header) serialize() []byte {
+func (msg *Header) serialize() []byte {
 	result := make([]byte, 12)
 
 	binary.BigEndian.PutUint16(result[:2], msg.ID)
@@ -68,7 +68,7 @@ func (msg Header) serialize() []byte {
 }
 
 func (m *Message) DecodeMsg(data []byte) error {
-	m.DnsHeader = Header{}
+	m.DnsHeader = &Header{}
 	err := m.DnsHeader.DecodeHeader(data[:12])
 	if err != nil {
 		fmt.Println("Error deconing Header ", err)
@@ -89,7 +89,7 @@ func (m *Header) DecodeHeader(data []byte) error {
 	m.Flags.RA = flags>>7 != 0
 	m.Flags.Z = uint8(flags >> 4)
 	// m.Flags.Rcode = m.Flags.Rcode
-	fmt.Println(m.Flags.Rcode)
+	// fmt.Println(m.Flags.Rcode)
 	m.QDCount = binary.BigEndian.Uint16(data[4:6])
 	m.ANCount = binary.BigEndian.Uint16(data[6:8])
 	m.NSCount = binary.BigEndian.Uint16(data[8:10])
@@ -115,7 +115,7 @@ type DNSQuestion struct {
 }
 
 // Serialize the question section into array of bytes
-func (question DNSQuestion) serialize() []byte {
+func (question *DNSQuestion) serialize() []byte {
 	questionAdd := make([]byte, 4) // question in 4 bytes long + the domain name
 	binary.BigEndian.PutUint16(questionAdd[:2], uint16(question.Type))
 	binary.BigEndian.PutUint16(questionAdd[2:4], uint16(question.Class))
@@ -135,7 +135,7 @@ type ResourceRecord struct {
 
 // Serialize the Answer section into array of bytes
 // it return [14 + domain name ] bytes array
-func (Answer ResourceRecord) serialize() []byte {
+func (Answer *ResourceRecord) serialize() []byte {
 	questionAdd := make([]byte, 4)
 	binary.BigEndian.PutUint16(questionAdd[:2], uint16(Answer.Type))
 	binary.BigEndian.PutUint16(questionAdd[2:4], uint16(Answer.Class))
@@ -169,10 +169,10 @@ func getRcode(m *Message) uint8 {
 }
 
 // Create a response
-func CreateResponse(req *Message) Message {
+func CreateResponse(req *Message) *Message {
 	fmt.Println(req.DnsHeader.Flags.Rcode)
-	return Message{
-		DnsHeader: Header{
+	return &Message{
+		DnsHeader: &Header{
 			ID: req.DnsHeader.ID,
 			Flags: DnsMsgFlags{
 				QR:     true,
@@ -189,12 +189,12 @@ func CreateResponse(req *Message) Message {
 			NSCount: 0x0,
 			ARCount: 0x0,
 		},
-		Question: DNSQuestion{
+		Question: &DNSQuestion{
 			Name:  "codecrafters.io",
 			Type:  1,
 			Class: 1,
 		},
-		ResourceRecord: ResourceRecord{
+		ResourceRecord: &ResourceRecord{
 			Name:   "codecrafters.io",
 			Type:   1,
 			Class:  1,
