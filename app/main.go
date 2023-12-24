@@ -81,13 +81,13 @@ func (m *Message) DecodeMsg(data []byte) error {
 func (m *Header) DecodeHeader(data []byte) error {
 	m.ID = binary.BigEndian.Uint16(data[:2])
 	flags := binary.BigEndian.Uint16(data[2:4])
-	m.Flags.QR = flags>>15 != 0
-	m.Flags.OPCode = uint8(flags >> 11)
-	m.Flags.AA = flags>>10 != 0
-	m.Flags.TC = flags>>9 != 0
-	m.Flags.RD = (flags>>8 & 0x01) != 0
-	m.Flags.RA = flags>>7 != 0
-	m.Flags.Z = uint8(flags >> 4)
+	m.Flags.QR = (flags >> 15 & 0x01) != 0
+	m.Flags.OPCode = uint8(flags>>11) & 0x0F
+	m.Flags.AA = (flags >> 10 & 0x01) != 0
+	m.Flags.TC = (flags >> 9 & 0x01) != 0
+	m.Flags.RD = (flags >> 8 & 0x01) != 0
+	m.Flags.RA = (flags >> 7 & 0x01) != 0
+	m.Flags.Z = uint8(flags>>4) & 0x07
 	// m.Flags.Rcode = m.Flags.Rcode
 	// fmt.Println(m.Flags.Rcode)
 	m.QDCount = binary.BigEndian.Uint16(data[4:6])
