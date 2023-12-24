@@ -169,6 +169,7 @@ func getRcode (m Message) uint8 {
 }
 // Create a response
 func CreateResponse(req Message) Message {
+	fmt.Println(req.DnsHeader.Flags.Rcode)
 	return Message{
 		DnsHeader: Header{
 			ID: req.DnsHeader.ID,
