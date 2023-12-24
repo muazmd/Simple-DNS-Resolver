@@ -89,7 +89,7 @@ func (m Header) DecodeHeader(data []byte) (Header, error) {
 	h.Flags.RD = flags>>8 != 0
 	h.Flags.RA = flags>>7 != 0
 	h.Flags.Z = uint8(flags >> 4)
-
+	fmt.Println(flags)
 	h.QDCount = binary.BigEndian.Uint16(data[4:6])
 	h.ANCount = binary.BigEndian.Uint16(data[6:8])
 	h.NSCount = binary.BigEndian.Uint16(data[8:10])
@@ -161,12 +161,13 @@ func LabelSequence(q string) []byte {
 	return sequence
 }
 
-func getRcode (m Message) uint8 {
+func getRcode(m Message) uint8 {
 	if m.DnsHeader.Flags.Rcode == 0 {
-		return 0 
+		return 0
 	}
 	return 4
 }
+
 // Create a response
 func CreateResponse(req Message) Message {
 	fmt.Println(req.DnsHeader.Flags.Rcode)
