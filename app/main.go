@@ -160,7 +160,7 @@ func LabelSequence(q string) []byte {
 	return sequence
 }
 
-func getRcode(m Message) uint8 {
+func getRcode(m *Message) uint8 {
 	if m.DnsHeader.Flags.Rcode == 0 {
 		return 0
 	}
@@ -168,7 +168,7 @@ func getRcode(m Message) uint8 {
 }
 
 // Create a response
-func CreateResponse(req Message) Message {
+func CreateResponse(req *Message) Message {
 	fmt.Println(req.DnsHeader.Flags.Rcode)
 	return Message{
 		DnsHeader: Header{
@@ -235,7 +235,7 @@ func main() {
 
 		// receivedData := string(buf[:size])
 		// fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
-		m := Message{}
+		m := &Message{}
 		err = m.DecodeMsg(buf[:size])
 		if err != nil {
 			fmt.Println("error parsing message", err)
