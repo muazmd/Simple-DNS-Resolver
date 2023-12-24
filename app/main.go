@@ -89,7 +89,7 @@ func (m Header) DecodeHeader(data []byte) (Header, error) {
 	h.Flags.RD = flags>>8 != 0
 	h.Flags.RA = flags>>7 != 0
 	h.Flags.Z = uint8(flags >> 4)
-	fmt.Printf("%08b" ,flags)
+	fmt.Printf("%08b", flags)
 	h.QDCount = binary.BigEndian.Uint16(data[4:6])
 	h.ANCount = binary.BigEndian.Uint16(data[6:8])
 	h.NSCount = binary.BigEndian.Uint16(data[8:10])
@@ -243,7 +243,7 @@ func main() {
 		}
 
 		response := CreateResponse(msg).serialize()
-
+		fmt.Println(response)
 		_, err = udpConn.WriteToUDP(response, source)
 		if err != nil {
 			fmt.Println("Failed to send response:", err)
