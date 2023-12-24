@@ -85,7 +85,7 @@ func (m *Header) DecodeHeader(data []byte) error {
 	m.Flags.OPCode = uint8(flags >> 11)
 	m.Flags.AA = flags>>10 != 0
 	m.Flags.TC = flags>>9 != 0
-	m.Flags.RD = flags>>8 != 0
+	m.Flags.RD = (flags>>8 & 0x01) != 0
 	m.Flags.RA = flags>>7 != 0
 	m.Flags.Z = uint8(flags >> 4)
 	// m.Flags.Rcode = m.Flags.Rcode
