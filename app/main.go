@@ -205,6 +205,10 @@ func main() {
 		if err != nil {
 			fmt.Println("Failed to send response:", err)
 		}
-		fmt.Println(io.ReadAll(udpConn))
+		t,err := io.ReadAll(udpConn)
+		if err != nil{
+			fmt.Println(err)
+		}
+		fmt.Println("Hello",t )
 	}
 }
