@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"strings"
 
-	// Uncomment this block to pass the first stage
 	"net"
 )
 
@@ -15,6 +15,14 @@ type Message struct {
 	ResourceRecord ResourceRecord
 }
 
+func (header Message) serialize() []byte {
+	headerBytes := header.DnsHeader.serialize()
+	QuestionBytes := header.Question.serialize()
+	AnswerBytes := header.ResourceRecord.serialize()
+	result := append(headerBytes, QuestionBytes...)
+	return append(result, AnswerBytes...)
+}
+
 type Header struct {
 	ID      uint16
 	Flags   DnsMsgFlags
@@ -22,6 +30,40 @@ type Header struct {
 	ANCount uint16
 	NSCount uint16
 	ARCount uint16
+}
+
+func (msg Header) serialize() []byte {
+	result := make([]byte, 12)
+
+	binary.BigEndian.PutUint16(result[:2], msg.ID)
+	var flags uint16
+
+	if msg.Flags.QR { // the Id is 16 bits
+		flags |= 1 << 15 // this means 1 shifted 15 0s to the right ( or 1  multiplies by 2 15 times )
+	}
+	flags |= uint16(msg.Flags.OPCode) << 11
+
+	if msg.Flags.AA {
+		flags |= 1 << 10
+	}
+	if msg.Flags.TC {
+		flags |= 1 << 9
+	}
+	if msg.Flags.RD {
+		flags |= 1 << 8
+	}
+	if msg.Flags.RA {
+		flags |= 1 << 7
+	}
+	flags |= uint16(msg.Flags.Z) << 4
+	flags |= uint16(msg.Flags.Rcode)
+	binary.BigEndian.PutUint16(result[2:4], flags)
+	binary.BigEndian.PutUint16(result[4:6], msg.QDCount)
+	binary.BigEndian.PutUint16(result[6:8], msg.ANCount)
+	binary.BigEndian.PutUint16(result[8:10], msg.NSCount)
+	binary.BigEndian.PutUint16(result[10:12], msg.ARCount)
+	return result
+
 }
 
 type DnsMsgFlags struct {
@@ -36,8 +78,18 @@ type DnsMsgFlags struct {
 }
 type DNSQuestion struct {
 	Name  string
-	Type  int
-	Class int
+	Type  int // 2 bytes
+	Class int //2 bytes
+}
+
+// Serialize the question section into array of bytes
+func (question DNSQuestion) serialize() []byte {
+	questionAdd := make([]byte, 4) // question in 4 bytes long + the domain name
+	binary.BigEndian.PutUint16(questionAdd[:2], uint16(question.Type))
+	binary.BigEndian.PutUint16(questionAdd[2:4], uint16(question.Class))
+	result := append(LabelSequence(question.Name), questionAdd...)
+	return result
+
 }
 
 type ResourceRecord struct {
@@ -46,9 +98,11 @@ type ResourceRecord struct {
 	Class  uint16 //2 bytes
 	TTL    uint32 // 4 bytes
 	Length uint16 // 2 bytes
-	Data   uint32
+	Data   uint32 // 4 bytes
 }
 
+// Serialize the Answer section into array of bytes
+// it return [14 + domain name ] bytes array
 func (Answer ResourceRecord) serialize() []byte {
 	questionAdd := make([]byte, 4)
 	binary.BigEndian.PutUint16(questionAdd[:2], uint16(Answer.Type))
@@ -62,15 +116,8 @@ func (Answer ResourceRecord) serialize() []byte {
 	return append(result, answerData...)
 
 }
-func (question DNSQuestion) serialize() []byte {
-	questionAdd := make([]byte, 4)
-	binary.BigEndian.PutUint16(questionAdd[:2], uint16(question.Type))
-	binary.BigEndian.PutUint16(questionAdd[2:4], uint16(question.Class))
-	result := append(LabelSequence(question.Name), questionAdd...)
-	return result
 
-}
-
+// Convers the domain name into an array of bytes teminated with null \x00
 func LabelSequence(q string) []byte {
 	labels := strings.Split(q, ".") //lable : google.com
 	var sequence []byte
@@ -82,6 +129,7 @@ func LabelSequence(q string) []byte {
 	return sequence
 }
 
+// Create a response
 func CreateResponse() Message {
 	return Message{
 		DnsHeader: Header{
@@ -107,68 +155,22 @@ func CreateResponse() Message {
 			Class: 1,
 		},
 		ResourceRecord: ResourceRecord{
-			Name: "codecrafters.io",
-			Type: 1,
-			Class: 1,
-			TTL: 60,
+			Name:   "codecrafters.io",
+			Type:   1,
+			Class:  1,
+			TTL:    60,
 			Length: 4,
-			Data: 0,
+			Data:   0,
 		},
 	}
 }
 
 // 0 :Id  0000: Opcode  0: AA  0: TC  0: RD  0:RA  000:Z   0000 : Rcode
 
-func (header Message) serialize() []byte {
-	headerBytes := header.DnsHeader.serialize()
-	QuestionBytes := header.Question.serialize()
-	AnswerBytes := header.ResourceRecord.serialize()
-	result := append(headerBytes, QuestionBytes...)
-	return append(result, AnswerBytes...)
-}
-
-func (msg Header) serialize() []byte {
-	result := make([]byte, 12)
-
-	binary.BigEndian.PutUint16(result[:2], msg.ID)
-	var flags uint16
-
-	if msg.Flags.QR {
-		flags |= 1 << 15
-	}
-	flags |= uint16(msg.Flags.OPCode) << 11
-
-	if msg.Flags.AA {
-		flags |= 1 << 10
-	}
-	if msg.Flags.TC {
-		flags |= 1 << 9
-	}
-	if msg.Flags.RD {
-		flags |= 1 << 8
-	}
-	if msg.Flags.RA {
-		flags |= 1 << 7
-	}
-
-	flags |= uint16(msg.Flags.Z) << 4
-	flags |= uint16(msg.Flags.Rcode)
-	binary.BigEndian.PutUint16(result[2:4], flags)
-	binary.BigEndian.PutUint16(result[4:6], msg.QDCount)
-	binary.BigEndian.PutUint16(result[6:8], msg.ANCount)
-	binary.BigEndian.PutUint16(result[8:10], msg.NSCount)
-	binary.BigEndian.PutUint16(result[10:12], msg.ARCount)
-	return result
-
-}
-
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
 
 	fmt.Println("Logs from your program will appear here!")
 
-	// Uncomment this block to pass the first stage
-	//
 	udpAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:2053")
 	if err != nil {
 		fmt.Println("Failed to resolve UDP address:", err)
@@ -180,6 +182,7 @@ func main() {
 		fmt.Println("Failed to bind to address:", err)
 		return
 	}
+
 	defer udpConn.Close()
 
 	buf := make([]byte, 512)
@@ -194,12 +197,12 @@ func main() {
 		receivedData := string(buf[:size])
 		fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 
-		// Create an empty response
 		response := CreateResponse().serialize()
 
 		_, err = udpConn.WriteToUDP(response, source)
 		if err != nil {
 			fmt.Println("Failed to send response:", err)
 		}
+		fmt.Println(io.ReadAll(udpConn))
 	}
 }
