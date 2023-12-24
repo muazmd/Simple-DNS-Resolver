@@ -88,8 +88,8 @@ func (m *Header) DecodeHeader(data []byte) error {
 	m.Flags.RD = flags>>8 != 0
 	m.Flags.RA = flags>>7 != 0
 	m.Flags.Z = uint8(flags >> 4)
-	fmt.Printf("%08b", flags)
-
+	// m.Flags.Rcode = m.Flags.Rcode
+	fmt.Println(m.Flags.Rcode)
 	m.QDCount = binary.BigEndian.Uint16(data[4:6])
 	m.ANCount = binary.BigEndian.Uint16(data[6:8])
 	m.NSCount = binary.BigEndian.Uint16(data[8:10])
