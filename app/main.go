@@ -69,12 +69,21 @@ func (msg *Header) serialize() []byte {
 
 func (m *Message) DecodeMsg(data []byte) error {
 	m.DnsHeader = &Header{}
+	m.Question = &DNSQuestion{}
+	m.ResourceRecord = &ResourceRecord{}
 	err := m.DnsHeader.DecodeHeader(data[:12])
 	if err != nil {
 		fmt.Println("Error deconing Header ", err)
 		return err
 	}
-
+	err = m.Question.decodeQuestion(data[12:18])
+	if err != nil {
+		fmt.Println("err decoding Question", err)
+	}
+	err = m.ResourceRecord.decodeQuestion(data[18:])
+	if err != nil {
+		fmt.Println("err decoding Question", err)
+	}
 	return nil
 }
 
@@ -94,6 +103,27 @@ func (m *Header) DecodeHeader(data []byte) error {
 	m.ANCount = binary.BigEndian.Uint16(data[6:8])
 	m.NSCount = binary.BigEndian.Uint16(data[8:10])
 	m.ARCount = binary.BigEndian.Uint16(data[10:12])
+
+	return nil
+}
+
+func (Q *DNSQuestion) decodeQuestion(data []byte) error {
+	for _, v := range data {
+		fmt.Println(v)
+	}
+
+	Q.Type = int(binary.BigEndian.Uint16(data[2:4]))
+	Q.Class = int(binary.BigEndian.Uint16(data[4:6]))
+
+	return nil
+}
+func (A *ResourceRecord) decodeQuestion(data []byte) error {
+	for _, v := range data {
+		fmt.Println(v)
+	}
+
+	A.Type = binary.BigEndian.Uint16(data[2:4])
+	A.Class = binary.BigEndian.Uint16(data[4:6])
 
 	return nil
 }
