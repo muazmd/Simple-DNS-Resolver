@@ -67,35 +67,34 @@ func (msg Header) serialize() []byte {
 
 }
 
-func (m Message) DecodeMsg(data []byte) (Message, error) {
-	msg := Message{}
-	header, err := m.DnsHeader.DecodeHeader(data[:12])
+func (m *Message) DecodeMsg(data []byte) error {
+
+	err := m.DnsHeader.DecodeHeader(data[:12])
 	if err != nil {
 		fmt.Println("Error deconing Header ", err)
-		return msg, err
+		return err
 	}
-	msg.DnsHeader = header
-	return msg, nil
+
+	return nil
 }
 
-func (m Header) DecodeHeader(data []byte) (Header, error) {
-	h := Header{}
-	h.ID = binary.BigEndian.Uint16(data[:2])
+func (m *Header) DecodeHeader(data []byte) error {
+	m.ID = binary.BigEndian.Uint16(data[:2])
 	flags := binary.BigEndian.Uint16(data[2:4])
-	h.Flags.QR = flags>>15 != 0
-	h.Flags.OPCode = uint8(flags >> 11)
-	h.Flags.AA = flags>>10 != 0
-	h.Flags.TC = flags>>9 != 0
-	h.Flags.RD = flags>>8 != 0
-	h.Flags.RA = flags>>7 != 0
-	h.Flags.Z = uint8(flags >> 4)
+	m.Flags.QR = flags>>15 != 0
+	m.Flags.OPCode = uint8(flags >> 11)
+	m.Flags.AA = flags>>10 != 0
+	m.Flags.TC = flags>>9 != 0
+	m.Flags.RD = flags>>8 != 0
+	m.Flags.RA = flags>>7 != 0
+	m.Flags.Z = uint8(flags >> 4)
 	fmt.Printf("%08b", flags)
-	h.QDCount = binary.BigEndian.Uint16(data[4:6])
-	h.ANCount = binary.BigEndian.Uint16(data[6:8])
-	h.NSCount = binary.BigEndian.Uint16(data[8:10])
-	h.ARCount = binary.BigEndian.Uint16(data[10:12])
+	m.QDCount = binary.BigEndian.Uint16(data[4:6])
+	m.ANCount = binary.BigEndian.Uint16(data[6:8])
+	m.NSCount = binary.BigEndian.Uint16(data[8:10])
+	m.ARCount = binary.BigEndian.Uint16(data[10:12])
 
-	return h, nil
+	return nil
 }
 
 type DnsMsgFlags struct {
@@ -237,12 +236,12 @@ func main() {
 		// receivedData := string(buf[:size])
 		// fmt.Printf("Received %d bytes from %s: %s\n", size, source, receivedData)
 		m := Message{}
-		msg, err := m.DecodeMsg(buf[:size])
+		err = m.DecodeMsg(buf[:size])
 		if err != nil {
 			fmt.Println("error parsing message", err)
 		}
 
-		response := CreateResponse(msg).serialize()
+		response := CreateResponse(m).serialize()
 		fmt.Println(response)
 		_, err = udpConn.WriteToUDP(response, source)
 		if err != nil {
