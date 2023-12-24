@@ -162,7 +162,7 @@ func LabelSequence(q string) []byte {
 }
 
 func getRcode(m *Message) uint8 {
-	if m.DnsHeader.Flags.Rcode == 0 {
+	if m.DnsHeader.Flags.OPCode == 0 {
 		return 0
 	}
 	return 4
