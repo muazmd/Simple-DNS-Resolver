@@ -220,12 +220,12 @@ func CreateResponse(req *Message) *Message {
 			ARCount: 0x0,
 		},
 		Question: &DNSQuestion{
-			Name:  req.Question.Name,
+			Name:  "codecrafters.io",
 			Type:  1,
 			Class: 1,
 		},
 		ResourceRecord: &ResourceRecord{
-			Name:   req.ResourceRecord.Name,
+			Name:   "codecrafters.io",
 			Type:   1,
 			Class:  1,
 			TTL:    60,
