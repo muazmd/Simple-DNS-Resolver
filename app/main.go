@@ -76,14 +76,14 @@ func (m *Message) DecodeMsg(data []byte) error {
 		fmt.Println("Error deconing Header ", err)
 		return err
 	}
-	err = m.Question.decodeQuestion(data[12:18])
+	err = m.Question.decodeQuestion(data[12:])
 	if err != nil {
 		fmt.Println("err decoding Question", err)
 	}
-	err = m.ResourceRecord.decodeQuestion(data[18:])
-	if err != nil {
-		fmt.Println("err decoding Question", err)
-	}
+	// err = m.ResourceRecord.decodeQuestion(data[18:])
+	// if err != nil {
+	// 	fmt.Println("err decoding Question", err)
+	// }
 	return nil
 }
 
@@ -108,25 +108,39 @@ func (m *Header) DecodeHeader(data []byte) error {
 }
 
 func (Q *DNSQuestion) decodeQuestion(data []byte) error {
-	for _, v := range data {
-		fmt.Println(v)
-	}
+	var index int
+	for i, v := range data {
+		if v == '\x00' {
+			index = i
+		}
 
-	Q.Type = int(binary.BigEndian.Uint16(data[2:4]))
-	Q.Class = int(binary.BigEndian.Uint16(data[4:6]))
+	}
+	Q.Name = string(data[:index])
+	Q.Type = int(binary.BigEndian.Uint16(data[index : index+2]))
+	Q.Class = int(binary.BigEndian.Uint16(data[index+2 : index+4]))
 
 	return nil
 }
-func (A *ResourceRecord) decodeQuestion(data []byte) error {
-	for _, v := range data {
-		fmt.Println(v)
-	}
 
-	A.Type = binary.BigEndian.Uint16(data[2:4])
-	A.Class = binary.BigEndian.Uint16(data[4:6])
+// func getIndex()
 
-	return nil
-}
+// func (A *ResourceRecord) decodeQuestion(data []byte) error {
+// 	var index int
+// 	for i, v := range data {
+// 		if v == '\x00' {
+// 			index = i
+// 		}
+
+// 	}
+// 	A.Name = string(data[:index])
+// 	A.Type = binary.BigEndian.Uint16(data[index : index+2])
+// 	A.Class = binary.BigEndian.Uint16(data[index+2 : index+4])
+// 	A.TTL = binary.BigEndian.Uint32(data[index+4 : index+8])
+// 	A.Length = binary.BigEndian.Uint16(data[index+8 : index+10])
+// 	A.Data = binary.BigEndian.Uint32(data[index+10 : index+14])
+
+// 	return nil
+// }
 
 type DnsMsgFlags struct {
 	QR     bool
