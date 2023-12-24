@@ -161,6 +161,12 @@ func LabelSequence(q string) []byte {
 	return sequence
 }
 
+func getRcode (m Message) uint8 {
+	if m.DnsHeader.Flags.Rcode == 0 {
+		return 0 
+	}
+	return 4
+}
 // Create a response
 func CreateResponse(req Message) Message {
 	return Message{
@@ -174,7 +180,7 @@ func CreateResponse(req Message) Message {
 				RD:     req.DnsHeader.Flags.RD,
 				RA:     false,
 				Z:      0x0,
-				Rcode:  req.DnsHeader.Flags.Rcode,
+				Rcode:  getRcode(req),
 			},
 			QDCount: 0x1,
 			ANCount: 0x1,
