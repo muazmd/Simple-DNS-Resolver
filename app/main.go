@@ -12,14 +12,14 @@ import (
 
 type Message struct {
 	DnsHeader      *Header
-	Question       *DNSQuestion
-	ResourceRecord *ResourceRecord
+	Question       []*DNSQuestion
+	ResourceRecord []*ResourceRecord
 }
 
 func (header *Message) serialize() []byte {
 	headerBytes := header.DnsHeader.serialize()
-	QuestionBytes := header.Question.serialize()
-	AnswerBytes := header.ResourceRecord.serialize()
+	QuestionBytes := header.Question[0].serialize()
+	AnswerBytes := header.ResourceRecord[0].serialize()
 	result := append(headerBytes, QuestionBytes...)
 	return append(result, AnswerBytes...)
 }
@@ -69,17 +69,15 @@ func (msg *Header) serialize() []byte {
 
 func (m *Message) DecodeMsg(data []byte) error {
 	m.DnsHeader = &Header{}
-	m.Question = &DNSQuestion{}
-	m.ResourceRecord = &ResourceRecord{}
+	m.Question = []*DNSQuestion{}
+	m.ResourceRecord = []*ResourceRecord{}
 	err := m.DnsHeader.DecodeHeader(data[:12])
 	if err != nil {
 		fmt.Println("Error deconing Header ", err)
 		return err
 	}
-	err = m.Question.decodeQuestion(data[12:])
-	if err != nil {
-		fmt.Println("err decoding Question", err)
-	}
+	m.Question = decodeQuestions(data[12:], int(m.DnsHeader.QDCount))
+
 	// err = m.ResourceRecord.decodeQuestion(data[18:])
 	// if err != nil {
 	// 	fmt.Println("err decoding Question", err)
@@ -107,19 +105,43 @@ func (m *Header) DecodeHeader(data []byte) error {
 	return nil
 }
 
-func (Q *DNSQuestion) decodeQuestion(data []byte) error {
+func decodeQuestions(data []byte, count int) []*DNSQuestion {
+	res := make([]*DNSQuestion, count)
 	var index int
-	for i, v := range data {
-		if v == '\x00' {
-			index = i
+	for i := 0; i < count; i++ {
+		q, bytesToRead := decodeQuestion(data[index:])
+		if bytesToRead == 0 {
+			break
 		}
-
+		res[i] = q
+		index += bytesToRead
 	}
-	Q.Name = string(data[:index])
-	Q.Type = int(binary.BigEndian.Uint16(data[index : index+2]))
-	Q.Class = int(binary.BigEndian.Uint16(data[index+2 : index+4]))
+	return res
+}
 
-	return nil
+func decodeQuestion(data []byte) (*DNSQuestion, int) {
+	name, index := decodeDomain(data)
+	return &DNSQuestion{
+		Name:  name,
+		Type:  int(binary.BigEndian.Uint16(data[index : index+2])),
+		Class: int(binary.BigEndian.Uint16(data[index+2 : index+4])),
+	}, index + 4
+}
+
+func decodeDomain(data []byte) (string, int) {
+	var res []string
+	var index int
+	for {
+		byteToRead := int(data[index])
+		index++
+		lable := string(data[index : index+byteToRead])
+		res = append(res, lable)
+		index += byteToRead
+		if data[index] == '\x00' {
+			break
+		}
+	}
+	return strings.Join(res, "."), index
 }
 
 // func getIndex()
@@ -233,19 +255,8 @@ func CreateResponse(req *Message) *Message {
 			NSCount: 0x0,
 			ARCount: 0x0,
 		},
-		Question: &DNSQuestion{
-			Name: req.Question.Name,
-			Type:  1,
-			Class: 1,
-		},
-		ResourceRecord: &ResourceRecord{
-			Name:req.ResourceRecord.Name,
-			Type:   1,
-			Class:  1,
-			TTL:    60,
-			Length: 4,
-			Data:   0,
-		},
+		Question:       make([]*DNSQuestion, req.DnsHeader.QDCount),
+		ResourceRecord: make([]*ResourceRecord, req.DnsHeader.ANCount),
 	}
 }
 
