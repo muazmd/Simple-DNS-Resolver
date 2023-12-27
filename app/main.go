@@ -70,7 +70,7 @@ func (msg *Header) serialize() []byte {
 func (m *Message) DecodeMsg(data []byte) error {
 	m.DnsHeader = &Header{}
 	m.Question = []*DNSQuestion{}
-	m.ResourceRecord = []*ResourceRecord{}
+	// m.ResourceRecord = []*ResourceRecord{}
 	err := m.DnsHeader.DecodeHeader(data[:12])
 	if err != nil {
 		fmt.Println("Error deconing Header ", err)
